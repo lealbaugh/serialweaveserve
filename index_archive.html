@@ -1,0 +1,189 @@
+<html>
+<head>
+	<title>twitch! plays! loom!</title>
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="text/javascript">
+		var draft = [];
+		var lineNumber = 0;
+		var numberOfWefts = 40;
+		var numberOfWarps = 40;
+		var threadSize = 9;
+		var margin = 3;
+		var display;
+		var team = 0;
+
+		var warpColor = 'rgb(100, 100, 100)';
+		var weftColor = 'rgb(100, 255, 255)';
+		var socket;
+
+		var notifications = null;
+
+		window.onload = function onload () {			
+			socket = io();
+			socket.on('open', function(data) {
+				// socket.emit("init");
+			});
+			socket.on('message', function(msg) {
+				console.log(msg);
+			});
+			socket.on('threadChange', function(data) {
+				drawThread(data.line, data.thread, data.state);
+			});
+			socket.on('refresh', function(data) {
+				console.log("refreshing");
+				draft = data.history;
+				lineNumber = data.lineNumber;
+				renderHistory(draft, lineNumber);
+				// draft[draft.length-1] = data.pick;
+				// renderPick(0, data.pick);
+			});
+			socket.on('initData', function(data) {
+				team = data.team;
+				numberOfWarps = data.warps;
+				numberOfWefts = data.wefts;
+				initCanvas();
+				renderInstructions();
+				draft = data.history;
+				lineNumber = data.lineNumber;
+				console.log(data);
+				renderHistory(draft, lineNumber);
+			});
+			socket.on('newDraft', function (data) {
+				draft = data.history;
+				lineNumber = data.lineNumber;
+				console.log(data);
+				renderHistory(draft, lineNumber);
+			})
+			// socket.on('newPick', function(data) {
+			// 	draft.push(data.pick);
+			// 	lineNumber = data.lineNumber;
+			// 	renderHistory(draft, lineNumber);
+			// });
+			socket.on('nextPick', function (data) {
+				lineNumber = data.lineNumber;
+				renderHistory(draft, lineNumber);
+			})
+			socket.on('announcement', function (data) {
+				if (notifications) {
+					notifications.innerHTML = data.content;
+				}
+				else {
+	 				notifications = document.createElement("div");
+					notifications.id = "notifications";
+					notifications.innerHTML = data.content;
+					instructions.appendChild(notifications);
+				}
+			})
+
+		}
+
+		function initCanvas () {
+			var displayCanvas = document.getElementById('display');
+			display = displayCanvas.getContext('2d');
+			displayCanvas.width = numberOfWarps*threadSize;
+			displayCanvas.height = numberOfWefts*threadSize;
+			displayCanvas.onclick = function (event) {
+				var pos = getPosition(this, event);
+				var thread = Math.floor(pos.x/threadSize);
+				var line = Math.floor(((threadSize*numberOfWefts) - pos.y)/threadSize);
+				if (line >= lineNumber) {
+					console.log("line", line, "thread", thread);
+					drawThread(line, thread, team);
+					socket.emit("threadChange", {line: line, thread: thread, state: team});
+				}
+			}
+		}
+
+		function getPosition(elem, event){
+			var x, y;
+			var rect = elem.getBoundingClientRect();
+			var x = event.clientX - rect.left;
+			var y = event.clientY - rect.top;
+			return {x: x, y:y};
+		}
+
+		function drawThread (row, thread, state) {
+			if (state != 1) {
+				// draw warp first
+				display.fillStyle = warpColor;
+				display.fillRect(threadSize*thread + margin, threadSize*(numberOfWefts - (row+1)), threadSize - margin, threadSize);
+			}
+
+			// draw weft
+			display.fillStyle = weftColor;
+			display.fillRect(threadSize*thread, threadSize*(numberOfWefts - (row+1)) + margin, threadSize, threadSize - margin);
+
+			if (state == 1) {
+				// draw warp second
+				display.fillStyle = warpColor;
+				display.fillRect(threadSize*thread + margin, threadSize*(numberOfWefts - (row+1)), threadSize - margin, threadSize);
+			}
+
+			// display.fillStyle = (state == 1) ? warpColor : weftColor;
+			// display.fillRect(threadSize*thread, threadSize*row, threadSize, threadSize);
+		}
+		function renderPick (row, pick) {
+			for (var i = 0; i<pick.length; i++) {
+				drawThread(row, i, pick[i]);
+			}
+			// if (row > 0) {
+			// 	display.fillStyle = 'rgb(255, 255, 255, 0.7)';
+			// 	display.fillRect(0, threadSize*row, numberOfWarps*threadSize, threadSize);
+			// }
+		}
+		function renderHistory (history, lineNumber) {
+			display.fillStyle = 'rgb(220, 220, 220)';
+			display.fillRect(0, 0, numberOfWarps*threadSize, numberOfWefts*threadSize);
+			for (var j = 0; j<history.length && j<numberOfWefts; j++) {
+				renderPick(j, history[j]);
+			}
+			display.fillStyle = 'rgb(255, 255, 255, 0.7)';
+			display.fillRect(0, threadSize*(numberOfWefts-lineNumber), numberOfWarps*threadSize, lineNumber*threadSize);
+
+			display.fillStyle = 'rgb(255, 153, 0)';
+			display.fillRect(0, threadSize*(numberOfWefts-lineNumber), numberOfWarps*threadSize, margin);
+		}
+
+		function renderInstructions () {
+			instructions = document.getElementById('instructions');
+			var teamName = (team == 1) ? "warp" : "weft";
+			document.body.style.background = (team == 1) ? warpColor : weftColor;
+			instructions.innerHTML = "Weaving is the process of interlacing <i>warp</i> and <i>weft</i> threads.<br>For a given point of interlacement, either the warp thread (shown here in dark grey) is in front or the weft thread (teal) is.<br>You are on <b>team "+teamName+"</b>: click an interlacement point to bring the "+teamName+" thread to the front.<br>The area below the orange line has already been woven and cannot be changed.";
+			instructions.style.width = numberOfWarps*threadSize;
+		}
+
+
+	</script>
+	<style type="text/css">
+		* {
+			text-align: center;
+		}
+		#display {
+			outline: 4px white solid;
+			background: #eee;
+			/*padding: 10px;*/
+		}
+		#instructions {
+			background: white;
+			margin: 2em auto;
+			outline: 4px white solid;
+			padding-top: 1em;
+			padding-bottom: 1em;
+		}
+		#notifications {
+			background: #ff9900;
+			outline: 4px white solid;
+			margin-top: 0.5em;
+			padding-top: 0.5em;
+			padding-bottom: 0.5em;
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+<div id="instructions">
+</div>
+
+<canvas id="display" width="150" height="150"></canvas>
+</body>
+</html>

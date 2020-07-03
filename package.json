@@ -1,0 +1,14 @@
+{
+  "name": "twitchplaysloom",
+  "version": "1.0.0",
+  "description": "Server for getting loom picks from randos",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Lea Albaugh",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}

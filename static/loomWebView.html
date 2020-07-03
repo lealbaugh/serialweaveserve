@@ -1,0 +1,78 @@
+<html>
+  <head>
+    <title>a cute little loom renderer</title>
+    <script type="text/javascript">
+      var draft = [];
+      var numberOfWefts = 100;
+      var numberOfWarps = 100;
+      var threadSize = 5;
+      var display;
+
+      // // Create WebSocket connection.
+      const socket = new WebSocket("ws://localhost:3000");
+      // Connection opened
+      socket.addEventListener("open", function(event) {
+        console.log("socket open");
+        socket.send("getPick");
+      });
+
+      // Listen for messages
+      socket.addEventListener("message", function(event) {
+        // console.log('Message from server ', event.data);
+        render(JSON.parse(event.data));
+      });
+
+      window.onload = function onload() {
+        console.log("loaded");
+
+        var displayCanvas = document.getElementById("display");
+        display = displayCanvas.getContext("2d");
+        displayCanvas.width = numberOfWarps * threadSize;
+        displayCanvas.height = numberOfWefts * threadSize;
+      };
+      window.onclick = function onclick() {
+        socket.send("getPick");
+      };
+
+      function render(pick) {
+        // console.log(pick);
+        display.fillStyle = "rgb(255, 255, 255)";
+        display.fillRect(
+          0,
+          0,
+          numberOfWarps * threadSize,
+          numberOfWefts * threadSize
+        );
+
+        draft.unshift(pick);
+        display.fillStyle = "rgb(0, 0, 0)";
+        for (var i = 0; i < numberOfWefts && i < draft.length; i++) {
+          thisPick = draft[i];
+          for (var j = 0; j < thisPick.length; j++) {
+            if (thisPick[j] == 1) {
+              display.fillRect(
+                threadSize * j,
+                threadSize * i,
+                threadSize,
+                threadSize
+              );
+            }
+          }
+        }
+      }
+    </script>
+    <style type="text/css">
+      * {
+        text-align: center;
+      }
+      #display {
+        outline: 1px black solid;
+      }
+    </style>
+  </head>
+  <body>
+    <div>oh hi</div>
+
+    <canvas id="display" width="150" height="150"></canvas>
+  </body>
+</html>
