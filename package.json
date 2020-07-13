@@ -1,5 +1,5 @@
 {
-  "name": "twitchplaysloom",
+  "name": "weaveserve",
   "version": "1.0.0",
   "description": "Server for getting loom picks from randos",
   "main": "server.js",

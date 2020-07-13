@@ -1,0 +1,2 @@
+- Add tabby border
+- add sliding window

@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>twitch! plays! loom!</title>
+	<title>say something</title>
 	<style type="text/css">
 		* {
 			text-align: center;
@@ -17,8 +17,11 @@
 	</style>
 </head>
 <body>
+  <div id="instructions">
+    say something (or nothing, to clear)
+  </div>
   <form action="/broadcast", method="post">
-  <input type="text" label="message" name="message">
+  <input type="text" label="message" name="message"/>
   </form>
 </body>
 </html>
